@@ -1,0 +1,216 @@
+<html>
+<head>
+    <title>Breakout Game</title>
+    <body>
+        <canvas height="500" width="500" id="ctx" style="border:2px solid black"></canvas>
+        <script>
+            var ctx = document.getElementById('ctx').getContext('2d');
+            var WIDTH = 500;
+            var HEIGHT = 500;
+            var noOfTiles,  tileList, score, intervalVar, running = false, hitCount =0;
+            ctx.font = '20 px Calibri';
+            ctx.fillText('Click to start the game', 150, 250);
+            
+            var ball = {
+                x: 0,
+                y: 0,
+                radius: 5,
+                color: 'blue', spdX: -5,
+                spdY: -5
+            };
+            var base={
+                x: 0,
+                y: 400,
+                height: 20,
+                width: 100,
+                color: 'red',
+                pressLeft: false,
+                pressRight: false, 
+                lives: 3
+            };
+
+            var tile = {
+                height: 20,
+                width: 40, 
+                color: 'orange'
+            }
+            document.getElementById('ctx').onmousedown = ()=>{
+                if(running){
+                    running= false;
+                    clearInterval(intervalVar);
+                }
+                startGame();
+            }
+
+            document.onkeydown = (event)=>{
+                if(event.keyCode == 37){
+                    base.pressLeft = true;
+                    base.pressRight = false;
+                }
+                else if(event.keyCode == 39){
+                    base.pressLeft = false;
+                    base.pressRight = true;
+                }
+            }
+
+            document.onkeyup = (event)=>{
+                if(event.keyCode == 37){
+                    base.pressLeft = false;
+                }
+                else if(event.keyCode == 39){
+                    base.pressRight = false;
+                }
+            }
+
+            testCollision= (base, ball)=>{
+                return ((base.x < ball.x + 2*ball.radius) &&
+                        (ball.x < base.x + base.width) &&
+                        (base.y < ball.y + 2*ball.radius) &&
+                        (ball.y < base.y + base.height));
+            }
+
+            testCollisionTile = (t, ball)=>{
+                return ((t.x < ball.x + 2*ball.radius) &&
+                        (ball.x < t.x + tile.width) &&
+                        (t.y < ball.y + 2*ball.radius) &&
+                        (ball.y < t.y + tile.height));
+            }
+            drawBall = ()=>{
+                ctx.save();
+                ctx.fillStyle = ball.color;
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius, 0, 2*Math.PI);
+                ctx.fill();
+                ctx.restore();
+            }
+            drawBase = ()=>{
+                ctx.save();
+                ctx.fillStyle = base.color;
+                ctx.fillRect(base.x, base.y, base.width, base.height);
+                ctx.restore();
+            }
+            drawTile = (t, i)=>{
+                ctx.save();
+                ctx.fillStyle = tile.color;
+                ctx.fillRect(t.x, t.y, tile.width, tile.height);
+                ctx.restore();
+            }
+
+            updateBasePosition = ()=>{
+                if(base.pressLeft){
+                    base.x = base.x - 8;
+                }
+                else if(base.pressRight){
+                    base.x = base.x + 8;
+                }
+                if(base.x < 0){
+                    base.x =0;
+                }
+                if(base.x > WIDTH - base.width){
+                    base.x = WIDTH - base.width;
+                }
+            }
+
+            updateBallPosition =()=>{
+                ball.x += ball.spdX;
+                ball.y += ball.spdY;
+                if(ball.x > WIDTH || ball.x < 0){
+                    hitCount++;
+                    if(hitCount %10 ==0){
+                        if(ball.spdX < 0){
+                            ball.spdX = -(Math.abs(ball.spdX) +1);
+                        }
+                        else{
+                            ball.spdX+=1;
+                        }
+                    }
+                    
+                    ball.spdX = -ball.spdX;
+                }
+                if( ball.y < 0){
+                    hitCount++;
+                    if(hitCount %10 ==0){
+                        if(ball.spdY < 0){
+                            ball.spdY = -(Math.abs(ball.spdY) +1);
+                        }
+                        else{
+                            ball.spdY += 1;
+                        }
+                    }
+                    ball.spdY = -ball.spdY;
+                }
+                if(ball.y > HEIGHT){
+                    hitCount++;
+                    if(hitCount %10 ==0){
+                        if(ball.spdY < 0){
+                            ball.spdY = -(Math.abs(ball.spdX) +1);
+                        }
+                        else{
+                            ball.spdY+=1;
+                        }
+                    }
+                    ball.spdY = -ball.spdY;
+                    base.lives--;
+                }
+            }
+            
+            isGameOver = ()=>{
+                if(base.lives < 0 || score ==330){
+                    clearInterval(intervalVar);
+                    ctx.fillText('Game Over! Click to restart', 150, 250);
+                }
+            }
+
+            update = () =>{
+                ctx.clearRect(0, 0, WIDTH, HEIGHT);
+                tileList.forEach(drawTile);
+                drawBall();
+                drawBase();
+                if(testCollision(base, ball)){
+                    ball.spdY = -ball.spdY;
+                }
+                for(key in tileList){
+                    if(testCollisionTile(tileList[key], ball)){
+                        delete tileList[key];
+                        ball.spdY = - ball.spdY;
+                        score +=5;
+                    }
+                }
+                ctx.fillText("Score: " + score, 5, 490);
+                ctx.fillText("lives: " + base.lives, 430, 490);
+                isGameOver();
+                updateBasePosition();
+                updateBallPosition();
+            }
+
+            startGame = ()=>{
+                base.x = 150;
+                ball.x = base.x + 100;
+                ball.y = base.y - 100;
+                noOfTiles =0;
+                var tileX = 5;
+                var tileY = 5;
+                tileList =[];
+                score =0;
+                base.lives =3;
+                running = true;
+                for(var i=1; i<= 6; i++){
+                    tileX =5;
+                    for(var j=1; j<=11; j++){
+                        tileList[noOfTiles] = {
+                            x: tileX, y:tileY
+                        }
+                        noOfTiles++;
+                        tileX += 45;
+                    }
+                    tileY += 25;
+
+                }
+                intervalVar = setInterval(update, 20);
+               }
+               
+
+        </script>
+    </body>
+</head>
+</html>
